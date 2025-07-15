@@ -13,7 +13,7 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
-    college_name: '', // <-- New field
+    college_name: '',
 })
 
 const submit = () => {
