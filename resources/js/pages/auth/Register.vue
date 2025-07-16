@@ -39,7 +39,7 @@ const submit = () => {
                         :tabindex="1"
                         autocomplete="name"
                         v-model="form.name"
-
+                        placeholder="John Doe"
                     />
                     <InputError :message="form.errors.name" />
                 </div>
