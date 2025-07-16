@@ -34,5 +34,5 @@ Route::apiResource('college-admins', CollegeAdminController::class);
 // Student routes
 Route::apiResource('students', StudentController::class);
 
-// Additional routes if needed
+// active college admins
 Route::get('/college-admins/active', [CollegeAdminController::class, 'getActiveAdmins']);
