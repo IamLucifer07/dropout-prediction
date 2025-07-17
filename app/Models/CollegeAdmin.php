@@ -14,8 +14,6 @@ class CollegeAdmin extends Authenticatable
         'email',
         'phone',
         'college_name',
-        'department',
-        'position',
         'is_active',
         'password',
     ];
