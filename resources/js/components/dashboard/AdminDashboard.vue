@@ -209,7 +209,7 @@
   </div>
 </template>
 
-<script setup lang="js">
+<script>
 import { ref, onMounted, computed } from 'vue'
 import { usePage, router, Link } from '@inertiajs/vue3'
 // import { dashboardApi } from '@/api/dashboard'
