@@ -8,6 +8,14 @@ export default defineConfigWithVueTs(
     vueTsConfigs.recommended,
     {
         ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', 'resources/js/components/ui/*'],
+        files: ['**/*.vue', '**/*.js'],
+        languageOptions: {
+            parserOptions: {
+                ecmaVersion: 'latest',
+                sourceType: 'module',
+                extraFileExtensions: ['.vue'],
+            },
+        },
     },
     {
         rules: {
