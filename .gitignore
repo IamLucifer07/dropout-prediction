@@ -22,3 +22,12 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/python_scripts/ml_model/venv
+/python_scripts/ml_model/__pycache__
+/python_scripts/ml_model/models
+/python_scripts/dataset.csv
+/python_scripts/processed_data.csv
+/python_scripts/.DS_Store
+/.DS_Store
+*/.DS_Store
+.DS_Store
