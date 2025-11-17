@@ -9,10 +9,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Services\StudentFeatureTransformer;
 
 class StudentController extends Controller
 {
     use AuthorizesRequests;
+
+    public function __construct(private readonly StudentFeatureTransformer $featureTransformer) {}
+
     public function index(Request $request)
     {
         $query = Student::with(['latestPrediction'])
@@ -59,12 +63,13 @@ class StudentController extends Controller
             'additional_factors' => 'nullable|array',
         ]);
 
+        $validated['grades'] = $validated['grades'] ?? [];
         $validated['college_admin_id'] = $request->user()->id;
 
         $student = Student::create($validated);
 
         // Make prediction
-        $prediction = $this->makePrediction($student);
+        $prediction = $this->processPrediction($student);
 
         return response()->json([
             'student' => $student->load('latestPrediction'),
@@ -113,7 +118,7 @@ class StudentController extends Controller
 
         // Make new prediction if significant data changed
         if ($this->shouldMakeNewPrediction($request->all())) {
-            $this->makePrediction($student);
+            $this->processPrediction($student);
         }
 
         return response()->json($student->load('latestPrediction'));
@@ -128,33 +133,55 @@ class StudentController extends Controller
         return response()->json(['message' => 'Student deleted successfully']);
     }
 
-    private function makePrediction(Student $student)
+    public function makePrediction(Request $request, Student $student)
+    {
+        $this->authorize('view', $student);
+
+        $prediction = $this->processPrediction($student, $request->input('model'));
+
+        if (! $prediction) {
+            return response()->json(['error' => 'Unable to generate prediction'], 500);
+        }
+
+        return response()->json($prediction);
+    }
+
+    private function processPrediction(Student $student, ?string $model = null)
     {
         try {
-            $inputData = $this->prepareInputData($student);
-
-            $response = Http::timeout(30)->post(config('app.ml_api_url'), [
+            $inputData = $this->featureTransformer->transform($student);
+            $response = Http::timeout(30)->post(config('services.ml.url'), [
                 'data' => $inputData,
-                'model_version' => '1.0'
+                'model' => $model ?? 'random_forest.joblib',
             ]);
 
-            if ($response->successful()) {
-                $predictionData = $response->json();
-
-                $prediction = Prediction::create([
-                    'student_id' => $student->id,
-                    'college_admin_id' => $student->college_admin_id,
-                    'prediction_result' => $predictionData['prediction'],
-                    'confidence_score' => $predictionData['confidence'],
-                    'feature_importance' => $predictionData['feature_importance'] ?? null,
-                    'model_metadata' => $predictionData['model_metadata'] ?? null,
-                    'model_version' => $predictionData['model_version'] ?? '1.0',
-                    'input_data' => $inputData,
-                    'predicted_at' => now(),
+            if (! $response->successful()) {
+                Log::warning('Prediction API returned non-success status', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
                 ]);
 
-                return $prediction;
+                return $this->makeFallbackPrediction($student);
             }
+
+            $predictionData = $response->json();
+
+            $prediction = Prediction::create([
+                'student_id' => $student->id,
+                'college_admin_id' => $student->college_admin_id,
+                'prediction_result' => $predictionData['prediction'],
+                'confidence_score' => $predictionData['confidence'] ?? 0,
+                'feature_importance' => $predictionData['feature_importance'] ?? null,
+                'model_metadata' => array_merge(
+                    $predictionData['model_metadata'] ?? [],
+                    ['probabilities' => $predictionData['probabilities'] ?? []]
+                ),
+                'model_version' => $predictionData['model_metadata']['model_path'] ?? $model ?? '1.0',
+                'input_data' => $inputData,
+                'predicted_at' => now(),
+            ]);
+
+            return $prediction;
         } catch (\Exception $e) {
             Log::error('Prediction API error: ' . $e->getMessage());
 
@@ -165,41 +192,37 @@ class StudentController extends Controller
         return null;
     }
 
-    private function prepareInputData(Student $student)
-    {
-        return [
-            'age' => $student->age,
-            'gender' => $student->gender,
-            'gpa' => $student->gpa ?? 0,
-            'attendance_rate' => $student->attendance_rate,
-            'parental_education_level' => $student->parental_education_level,
-            'family_income' => $student->family_income ?? 0,
-            'internet_access' => $student->internet_access,
-            'previous_failures' => $student->previous_failures,
-            'extracurricular_involvement' => $student->extracurricular_involvement,
-            'mental_health_score' => $student->mental_health_score ?? 5,
-            'study_hours_per_week' => $student->study_hours_per_week,
-            'part_time_job' => $student->part_time_job,
-            'distance_from_home' => $student->distance_from_home,
-            'financial_aid' => $student->financial_aid,
-            'semester' => $student->semester,
-        ];
-    }
-
     private function makeFallbackPrediction(Student $student)
     {
-        // Simple rule-based fallback
+        $features = $this->featureTransformer->transform($student);
         $riskScore = 0;
 
-        if ($student->attendance_rate < 70) $riskScore += 3;
-        if ($student->gpa < 2.0) $riskScore += 3;
-        if ($student->previous_failures > 2) $riskScore += 2;
-        if ($student->mental_health_score < 4) $riskScore += 2;
-        if (!$student->internet_access) $riskScore += 1;
-        if ($student->study_hours_per_week < 10) $riskScore += 1;
+        if (($features['attendance_rate'] ?? 0) < 70) {
+            $riskScore += 3;
+        }
+
+        if (($features['gpa'] ?? 0) < 2.0) {
+            $riskScore += 3;
+        }
+
+        if (($features['previous_failures'] ?? 0) > 2) {
+            $riskScore += 2;
+        }
+
+        if (($features['mental_health_score'] ?? 5) < 4) {
+            $riskScore += 2;
+        }
+
+        if (empty($features['internet_access'])) {
+            $riskScore += 1;
+        }
+
+        if (($features['study_hours_per_week'] ?? 0) < 10) {
+            $riskScore += 1;
+        }
 
         $prediction = $riskScore >= 6 ? 'dropout' : ($riskScore >= 3 ? 'at_risk' : 'safe');
-        $confidence = max(0.5, min(0.95, 0.6 + ($riskScore * 0.05)));
+        $confidence = max(0.5, min(0.95, 0.55 + ($riskScore * 0.05)));
 
         return Prediction::create([
             'student_id' => $student->id,
@@ -209,7 +232,7 @@ class StudentController extends Controller
             'feature_importance' => null,
             'model_metadata' => ['fallback' => true],
             'model_version' => 'fallback',
-            'input_data' => $this->prepareInputData($student),
+            'input_data' => $features,
             'predicted_at' => now(),
         ]);
     }
