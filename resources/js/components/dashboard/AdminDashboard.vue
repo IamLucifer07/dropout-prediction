@@ -209,10 +209,10 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, computed } from 'vue'
 import { usePage, router, Link } from '@inertiajs/vue3'
-// import { dashboardApi } from '@/api/dashboard'
+import { dashboardApi } from '@/api/dashboard'
 // import StudentForm from '@/pages/students/StudentForm.vue'
 import RiskDistributionChart from '@/components/charts/RiskDistributionChart.vue'
 import MonthlyTrendsChart from '@/components/charts/MonthlyTrendsChart.vue' 

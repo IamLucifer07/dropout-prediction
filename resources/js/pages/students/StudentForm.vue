@@ -603,9 +603,9 @@ export default {
 <style scoped>
 /* .form-section {
   @apply  p-4 rounded-lg;
-} */
+} 
 
-/* .form-section h3 {
+.form-section h3 {
   @apply text-lg font-semibold text-gray-700 mb-4;
 }
 
@@ -623,5 +623,5 @@ export default {
 
 .error-message {
   @apply text-red-500 text-sm;
-} */
+ }  */
 </style>
