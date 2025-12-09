@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'college_admins',
         ],
+
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'college_admins',
+        ],
     ],
 
 
