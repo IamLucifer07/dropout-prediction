@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use Inertia\Inertia;
@@ -24,7 +25,15 @@ Route::get('dashboard', function () {
 
 Route::get('/students', function () {
     return Inertia::render('students/StudentForm');
-});
+})->middleware(['auth'])->name('students.create');
+
+Route::get('/students-list', [StudentController::class, 'showStudentListPage'])
+    ->middleware(['auth'])
+    ->name('students.list');
+
+Route::get('/students/{student}', [StudentController::class, 'showStudentDetailPage'])
+    ->middleware(['auth'])
+    ->name('students.show');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

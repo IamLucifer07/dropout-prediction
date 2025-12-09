@@ -47,7 +47,7 @@ class CollegeAdminController extends Controller
     public function getActiveAdmins(): JsonResponse
     {
         $admins = CollegeAdmin::active()
-            ->select('id', 'name', 'position', 'college_name', 'department')
+            ->select('id', 'name', 'college_name')
             ->orderBy('name')
             ->get();
 

@@ -29,18 +29,16 @@ class DashboardController extends Controller
             ->toArray();
 
         $monthlyTrends = Prediction::where('college_admin_id', $adminId)
-            ->select(
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
-                'prediction_result',
-                DB::raw('count(*) as count')
-            )
             ->where('created_at', '>=', now()->subMonths(12))
-            ->groupBy('month', 'prediction_result')
-            ->orderBy('month')
-            ->get()
-            ->groupBy('month')
-            ->map(function ($group) {
-                return $group->pluck('count', 'prediction_result')->toArray();
+            ->orderBy('created_at')
+            ->get() // First, get all the relevant records from the database
+            ->groupBy(function ($prediction) {
+                // Group them by month using PHP's Carbon library (which is built-in)
+                return $prediction->created_at->format('Y-m');
+            })
+            ->map(function ($monthlyPredictions) {
+                // For each month, count the occurrences of each prediction result
+                return $monthlyPredictions->countBy('prediction_result');
             });
 
         return response()->json([

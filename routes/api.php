@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes
+// Public college admin routes (for dropdowns)
+Route::get('/college-admins/active', [CollegeAdminController::class, 'getActiveAdmins']);
+
+// Protected routes (using session-based auth for Inertia.js)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -23,16 +26,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('students', StudentController::class);
     Route::post('/students/{student}/predict', [StudentController::class, 'makePrediction']);
+    Route::get('/ml-models', [StudentController::class, 'getAvailableModels']);
 
     Route::get('/external-data', [ExternalDataController::class, 'index']);
     Route::post('/external-data/sync', [ExternalDataController::class, 'syncData']);
+
+    // College Admin routes (protected)
+    Route::apiResource('college-admins', CollegeAdminController::class);
 });
-
-// College Admin routes
-Route::apiResource('college-admins', CollegeAdminController::class);
-
-// Student routes
-Route::apiResource('students', StudentController::class);
-
-// active college admins
-Route::get('/college-admins/active', [CollegeAdminController::class, 'getActiveAdmins']);
