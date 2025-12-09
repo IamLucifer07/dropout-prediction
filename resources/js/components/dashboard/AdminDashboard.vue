@@ -227,13 +227,25 @@ const dashboardData = ref({
 const page = usePage()
 const user = computed(() => page.props.auth.user)
 
-onMounted(async () => {
+const loadDashboardData = async () => {
   try {
     const response = await dashboardApi.getDashboardData()
     dashboardData.value = response.data
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   }
+}
+
+onMounted(async () => {
+  await loadDashboardData()
+  
+  // Refresh dashboard every 30 seconds to show updated data
+  setInterval(loadDashboardData, 30000)
+})
+
+// Expose refresh method for external calls
+defineExpose({
+  refresh: loadDashboardData
 })
 
 const logout = async () => {

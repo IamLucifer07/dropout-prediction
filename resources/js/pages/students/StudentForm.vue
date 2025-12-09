@@ -438,11 +438,85 @@
         </button>
       </div>
     </form>
+
+    <!-- Prediction Section (shown after student is saved) -->
+    <div v-if="savedStudent" class="mt-8 bg-white rounded-lg shadow-lg p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Make Dropout Prediction</h3>
+      
+      <div class="mb-4">
+        <label for="model_selection" class="block text-sm font-medium text-gray-700 mb-2">
+          Select ML Model
+        </label>
+        <select
+          id="model_selection"
+          v-model="selectedModel"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select a model</option>
+          <option v-for="model in availableModels" :key="model.name" :value="model.name">
+            {{ model.name.replace('.joblib', '').replace('_', ' ').toUpperCase() }}
+          </option>
+        </select>
+      </div>
+
+      <button
+        @click="makePrediction"
+        :disabled="predictionLoading || !selectedModel"
+        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ predictionLoading ? 'Predicting...' : 'Predict Dropout Risk' }}
+      </button>
+
+      <!-- Prediction Results -->
+      <div v-if="predictionResult" class="mt-6 p-4 rounded-lg" :class="getPredictionColorClass(predictionResult.prediction_result)">
+        <h4 class="text-lg font-semibold mb-2">Prediction Result</h4>
+        <div class="space-y-2">
+          <p class="text-sm">
+            <span class="font-medium">Risk Level:</span>
+            <span class="ml-2 px-2 py-1 rounded text-sm font-semibold" :class="getRiskBadgeClass(predictionResult.prediction_result)">
+              {{ formatRiskLevel(predictionResult.prediction_result) }}
+            </span>
+          </p>
+          <p class="text-sm">
+            <span class="font-medium">Confidence:</span>
+            <span class="ml-2">{{ Math.round(predictionResult.confidence_score * 100) }}%</span>
+          </p>
+          <p class="text-sm">
+            <span class="font-medium">Model Used:</span>
+            <span class="ml-2">{{ predictionResult.model_version }}</span>
+          </p>
+          <div v-if="predictionResult.model_metadata && predictionResult.model_metadata.probabilities" class="mt-3">
+            <p class="text-sm font-medium mb-1">Probability Distribution:</p>
+            <div class="space-y-1">
+              <div v-for="(prob, label) in predictionResult.model_metadata.probabilities" :key="label" class="flex items-center justify-between">
+                <span class="text-xs text-gray-600">{{ formatRiskLevel(label) }}:</span>
+                <span class="text-xs font-medium">{{ Math.round(prob * 100) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset Form Button -->
+      <div class="mt-6 flex justify-end">
+        <button
+          @click="resetFormAndClearPrediction"
+          class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        >
+          Add Another Student
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios'
+// import axios from 'axios'
+import apiClient from '@/api/index.js'
+
+// Configure axios to send credentials with requests
+apiClient.defaults.withCredentials = true
+apiClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
 export default {
   name: 'StudentForm',
@@ -452,7 +526,7 @@ export default {
       default: null
     }
   },
-  emits: ['student-saved', 'cancel'],
+  emits: ['student-saved', 'cancel', 'prediction-made'],
   data() {
     return {
       form: {
@@ -481,7 +555,12 @@ export default {
       },
       errors: {},
       loading: false,
-      collegeAdmins: [] // Will be populated from API
+      collegeAdmins: [], // Will be populated from API
+      savedStudent: null, // Store saved student for prediction
+      availableModels: [],
+      selectedModel: '',
+      predictionLoading: false,
+      predictionResult: null
     }
   },
   computed: {
@@ -507,15 +586,101 @@ export default {
   },
   async mounted() {
     await this.fetchCollegeAdmins()
+    await this.fetchAvailableModels()
   },
   methods: {
     async fetchCollegeAdmins() {
       try {
-        const response = await axios.get('/api/college-admins')
-        this.collegeAdmins = response.data
+        const response = await apiClient.get('/api/college-admins/active')
+        this.collegeAdmins = response.data.data || response.data || []
       } catch (error) {
         console.error('Error fetching college admins:', error)
+        // Try fallback endpoint
+        try {
+          const fallbackResponse = await apiClient.get('/api/college-admins')
+          this.collegeAdmins = fallbackResponse.data.data || fallbackResponse.data || []
+        } catch (fallbackError) {
+          console.error('Error fetching college admins (fallback):', fallbackError)
+        }
       }
+    },
+
+    async fetchAvailableModels() {
+      try {
+        const response = await apiClient.get('/api/ml-models')
+        this.availableModels = response.data.models || []
+        // Set default model if available
+        if (this.availableModels.length > 0 && !this.selectedModel) {
+          const defaultModel = this.availableModels.find(m => m.name === 'random_forest.joblib')
+          this.selectedModel = defaultModel ? defaultModel.name : this.availableModels[0].name
+        }
+      } catch (error) {
+        console.error('Error fetching available models:', error)
+        // Set default models on error
+        this.availableModels = [
+          { name: 'random_forest.joblib' },
+          { name: 'decision_tree.joblib' }
+        ]
+        this.selectedModel = 'random_forest.joblib'
+      }
+    },
+
+    async makePrediction() {
+      if (!this.savedStudent || !this.selectedModel) {
+        return
+      }
+
+      this.predictionLoading = true
+      this.predictionResult = null
+
+      try {
+        const response = await apiClient.post(`/api/students/${this.savedStudent.id}/predict`, {
+          model: this.selectedModel
+        })
+        
+        this.predictionResult = response.data
+        // Emit event to refresh dashboard
+        this.$emit('prediction-made', response.data)
+        
+        // Show success message
+        const riskLevel = this.formatRiskLevel(response.data.prediction_result)
+        const confidence = Math.round(response.data.confidence_score * 100)
+        alert(`Prediction completed!\nRisk Level: ${riskLevel}\nConfidence: ${confidence}%`)
+      } catch (error) {
+        console.error('Error making prediction:', error)
+        alert('Failed to make prediction. Please try again.')
+      } finally {
+        this.predictionLoading = false
+      }
+    },
+
+    getPredictionColorClass(riskLevel) {
+      switch (riskLevel) {
+        case 'dropout': return 'bg-red-50 border border-red-200'
+        case 'at_risk': return 'bg-orange-50 border border-orange-200'
+        case 'safe': return 'bg-green-50 border border-green-200'
+        default: return 'bg-gray-50 border border-gray-200'
+      }
+    },
+
+    getRiskBadgeClass(riskLevel) {
+      switch (riskLevel) {
+        case 'dropout': return 'bg-red-100 text-red-800'
+        case 'at_risk': return 'bg-orange-100 text-orange-800'
+        case 'safe': return 'bg-green-100 text-green-800'
+        default: return 'bg-gray-100 text-gray-800'
+      }
+    },
+
+    formatRiskLevel(riskLevel) {
+      return riskLevel.replace('_', ' ').toUpperCase().replace('AT RISK', 'AT RISK')
+    },
+
+    resetFormAndClearPrediction() {
+      this.resetForm()
+      this.savedStudent = null
+      this.predictionResult = null
+      this.selectedModel = this.availableModels.length > 0 ? this.availableModels[0].name : ''
     },
     
     addGrade() {
@@ -550,13 +715,18 @@ export default {
         
         let response
         if (this.isEditing) {
-          response = await axios.put(`/api/students/${this.student.id}`, formData)
+          response = await apiClient.put(`/api/students/${this.student.id}`, formData)
         } else {
-          response = await axios.post('/api/students', formData)
+          response = await apiClient.post('/api/students', formData)
         }
         
+        // Store saved student for prediction
+        this.savedStudent = response.data.student || response.data
+        
         this.$emit('student-saved', response.data)
-        this.resetForm()
+        
+        // Don't reset form immediately - allow user to make prediction
+        // this.resetForm()
       } catch (error) {
         if (error.response?.status === 422) {
           this.errors = error.response.data.errors
