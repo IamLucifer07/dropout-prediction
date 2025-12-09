@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Services\StudentFeatureTransformer;
+use Inertia\Inertia;
 
 class StudentController extends Controller
 {
@@ -64,16 +65,20 @@ class StudentController extends Controller
         ]);
 
         $validated['grades'] = $validated['grades'] ?? [];
-        $validated['college_admin_id'] = $request->user()->id;
+
+        // Get authenticated user (college admin)
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $validated['college_admin_id'] = $user->id;
 
         $student = Student::create($validated);
 
-        // Make prediction
-        $prediction = $this->processPrediction($student);
-
+        // Don't automatically make prediction - let admin choose when to predict
         return response()->json([
             'student' => $student->load('latestPrediction'),
-            'prediction' => $prediction,
         ], 201);
     }
 
@@ -137,6 +142,10 @@ class StudentController extends Controller
     {
         $this->authorize('view', $student);
 
+        $request->validate([
+            'model' => 'nullable|string',
+        ]);
+
         $prediction = $this->processPrediction($student, $request->input('model'));
 
         if (! $prediction) {
@@ -144,6 +153,40 @@ class StudentController extends Controller
         }
 
         return response()->json($prediction);
+    }
+
+    public function getAvailableModels()
+    {
+        try {
+            $response = Http::timeout(10)->get(str_replace('/predict', '/models', config('services.ml.url')));
+
+            if (! $response->successful()) {
+                Log::warning('Models API returned non-success status', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                // Return default models if API fails
+                return response()->json([
+                    'models' => [
+                        ['name' => 'random_forest.joblib'],
+                        ['name' => 'decision_tree.joblib'],
+                    ]
+                ]);
+            }
+
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            Log::error('Models API error: ' . $e->getMessage());
+
+            // Return default models on error
+            return response()->json([
+                'models' => [
+                    ['name' => 'random_forest.joblib'],
+                    ['name' => 'decision_tree.joblib'],
+                ]
+            ]);
+        }
     }
 
     private function processPrediction(Student $student, ?string $model = null)
@@ -188,8 +231,6 @@ class StudentController extends Controller
             // Fallback prediction based on simple rules
             return $this->makeFallbackPrediction($student);
         }
-
-        return null;
     }
 
     private function makeFallbackPrediction(Student $student)
@@ -248,5 +289,33 @@ class StudentController extends Controller
         ];
 
         return collect($significantFields)->some(fn($field) => isset($data[$field]));
+    }
+
+    public function showStudentListPage(Request $request)
+    {
+        $this->authorize('viewAny', Student::class);
+
+        $students = Student::query()
+            ->where('college_admin_id', $request->user()->id)
+            ->with('latestPrediction')
+            ->orderBy('full_name')
+            ->paginate(15);
+
+        return Inertia::render('students/StudentsList', [
+            'students' => $students,
+        ]);
+    }
+
+    public function showStudentDetailPage(Request $request, Student $student)
+    {
+        $this->authorize('view', $student);
+
+        $student->load(['predictions' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }]);
+
+        return Inertia::render('students/StudentDetail', [
+            'student' => $student,
+        ]);
     }
 }
