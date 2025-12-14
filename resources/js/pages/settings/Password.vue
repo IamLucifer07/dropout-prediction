@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
+// import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -9,14 +9,15 @@ import HeadingSmall from '@/components/HeadingSmall.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { type BreadcrumbItem } from '@/types';
+import Navbar from '@/components/Navbar.vue';
+// import { type BreadcrumbItem } from '@/types';
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Password settings',
-        href: '/settings/password',
-    },
-];
+// const breadcrumbItems: BreadcrumbItem[] = [
+//     {
+//         title: 'Password settings',
+//         href: '/settings/password',
+//     },
+// ];
 
 const passwordInput = ref<HTMLInputElement | null>(null);
 const currentPasswordInput = ref<HTMLInputElement | null>(null);
@@ -51,7 +52,8 @@ const updatePassword = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
+    <div class="min-h-screen bg-gray-50">
+    <Navbar />
         <Head title="Password settings" />
 
         <SettingsLayout>
@@ -115,5 +117,5 @@ const updatePassword = () => {
                 </form>
             </div>
         </SettingsLayout>
-    </AppLayout>
+    </div>
 </template>

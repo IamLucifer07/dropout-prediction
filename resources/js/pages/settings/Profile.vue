@@ -7,9 +7,10 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/AppLayout.vue';
+// import AppLayout from '@/layouts/AppLayout.vue';
+import Navbar from '@/components/Navbar.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem, type User } from '@/types';
+import {  type User } from '@/types';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -18,12 +19,12 @@ interface Props {
 
 defineProps<Props>();
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
+// const breadcrumbItems: BreadcrumbItem[] = [
+//     {
+//         title: 'Profile settings',
+//         href: '/settings/profile',
+//     },
+// ];
 
 const page = usePage();
 const user = page.props.auth.user as User;
@@ -41,7 +42,8 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
+   <div class="min-h-screen bg-gray-50">
+    <Navbar />
         <Head title="Profile settings" />
 
         <SettingsLayout>
@@ -104,5 +106,5 @@ const submit = () => {
 
             <DeleteUser />
         </SettingsLayout>
-    </AppLayout>
+    </div>
 </template>
