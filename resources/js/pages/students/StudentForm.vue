@@ -60,24 +60,7 @@
             <span v-if="errors.gender" class="text-red-500 text-sm">{{ errors.gender[0] }}</span>
           </div>
           
-          <div>
-            <label for="college_admin_id" class="block text-sm font-medium text-gray-700 mb-1">
-              College Admin *
-            </label>
-            <select
-              id="college_admin_id"
-              v-model="form.college_admin_id"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              :class="{ 'border-red-500': errors.college_admin_id }"
-            >
-              <option value="">Select College Admin</option>
-              <option v-for="admin in collegeAdmins" :key="admin.id" :value="admin.id">
-                {{ admin.name }}
-              </option>
-            </select>
-            <span v-if="errors.college_admin_id" class="text-red-500 text-sm">{{ errors.college_admin_id[0] }}</span>
-          </div>
+          <!-- College Admin field removed - backend gets it from authenticated user -->
         </div>
       </div>
 
@@ -530,7 +513,6 @@ export default {
   data() {
     return {
       form: {
-        college_admin_id: '',
         full_name: '',
         age: '',
         gender: '',
@@ -585,7 +567,7 @@ export default {
     }
   },
   async mounted() {
-    await this.fetchCollegeAdmins()
+    // Note: college_admin_id is no longer needed - backend gets it from authenticated user
     await this.fetchAvailableModels()
   },
   methods: {
@@ -704,13 +686,26 @@ export default {
       this.errors = {}
       
       try {
-        // Convert boolean values to proper format
+        // Convert boolean values to proper format and handle empty strings for optional numeric fields
+        // Note: college_admin_id is automatically set by backend from authenticated user
         const formData = {
           ...this.form,
+          // Convert empty strings to null for optional numeric fields
+          gpa: this.form.gpa === '' ? null : this.form.gpa,
+          family_income: this.form.family_income === '' ? null : this.form.family_income,
+          mental_health_score: this.form.mental_health_score === '' ? null : this.form.mental_health_score,
+          // Convert boolean values
           internet_access: Boolean(this.form.internet_access),
           extracurricular_involvement: Boolean(this.form.extracurricular_involvement),
           part_time_job: Boolean(this.form.part_time_job),
-          financial_aid: Boolean(this.form.financial_aid)
+          financial_aid: Boolean(this.form.financial_aid),
+          // Ensure numeric fields are numbers, not strings
+          age: Number(this.form.age),
+          attendance_rate: Number(this.form.attendance_rate) || 0,
+          previous_failures: Number(this.form.previous_failures) || 0,
+          study_hours_per_week: Number(this.form.study_hours_per_week) || 0,
+          distance_from_home: Number(this.form.distance_from_home) || 0,
+          semester: Number(this.form.semester) || 1
         }
         
         let response
@@ -725,14 +720,23 @@ export default {
         
         this.$emit('student-saved', response.data)
         
+        // Show success message
+        alert('Student created successfully!')
+        
         // Don't reset form immediately - allow user to make prediction
         // this.resetForm()
       } catch (error) {
+        console.error('Error saving student:', error)
         if (error.response?.status === 422) {
-          this.errors = error.response.data.errors
+          this.errors = error.response.data.errors || {}
+          // Show validation errors
+          const errorMessages = Object.values(this.errors).flat().join('\n')
+          alert('Validation errors:\n' + errorMessages)
+        } else if (error.response?.status === 401) {
+          alert('Authentication failed. Please login again.')
         } else {
-          console.error('Error saving student:', error)
-          // Handle other errors (show notification, etc.)
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to save student. Please try again.'
+          alert('Error: ' + errorMessage)
         }
       } finally {
         this.loading = false
@@ -741,7 +745,6 @@ export default {
     
     resetForm() {
       this.form = {
-        college_admin_id: '',
         full_name: '',
         age: '',
         gender: '',
