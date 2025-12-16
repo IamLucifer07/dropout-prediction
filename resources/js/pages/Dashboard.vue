@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
+// import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import AdminDashboard from '@/components/dashboard/AdminDashboard.vue';
+import Navbar from '@/components/Navbar.vue';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-];
+// const breadcrumbs: BreadcrumbItem[] = [
+//     {
+//         title: 'Dashboard',
+//         href: '/dashboard',
+//     },
+// ];
 </script>
 
 <template>
     <Head title="Dashboard" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <div class="min-h-screen bg-gray-50">
+        <Navbar />
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <AdminDashboard />
+            <AdminDashboard />
         </div>
-    </AppLayout>
+    </div>
 </template>

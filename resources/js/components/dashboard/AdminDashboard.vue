@@ -1,25 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <nav class="bg-white shadow-sm border-b">
+    <!-- <Navbar /> -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
             <h1 class="text-xl font-semibold text-gray-900">Dropout Prediction Dashboard</h1>
           </div>
-          <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-600">{{ user?.name }} - {{ user?.college_name }}</span>
-            <button
-              @click="logout"
-              class="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Logout
-            </button>
-          </div>
         </div>
-      </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0">
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -193,29 +181,21 @@
             <p class="mt-1 text-sm text-gray-200">Browse and manage student records</p>
           </Link>
 
-          <Link
-            href="/external-data"
-            class="bg-green-600 hover:bg-green-700 text-white rounded-lg p-6 text-center transition-colors"
-          >
-            <svg class="mx-auto h-12 w-12 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
-            </svg>
-            <h3 class="mt-2 text-sm font-medium">External Data</h3>
-            <p class="mt-1 text-sm text-green-200">Access open datasets and research</p>
-          </Link>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { usePage, router, Link } from '@inertiajs/vue3'
+import { ref, onMounted } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { dashboardApi } from '@/api/dashboard'
 // import StudentForm from '@/pages/students/StudentForm.vue'
 import RiskDistributionChart from '@/components/charts/RiskDistributionChart.vue'
-import MonthlyTrendsChart from '@/components/charts/MonthlyTrendsChart.vue' 
+import MonthlyTrendsChart from '@/components/charts/MonthlyTrendsChart.vue'
+// import Navbar from '@/components/Navbar.vue' 
 
 const dashboardData = ref({
   total_students: 0,
@@ -224,8 +204,6 @@ const dashboardData = ref({
   monthly_trends: {}
 })
 
-const page = usePage()
-const user = computed(() => page.props.auth.user)
 
 const loadDashboardData = async () => {
   try {
@@ -248,9 +226,6 @@ defineExpose({
   refresh: loadDashboardData
 })
 
-const logout = async () => {
-  router.post('/logout')
-}
 
 const getRiskColor = (risk) => {
   switch (risk) {
