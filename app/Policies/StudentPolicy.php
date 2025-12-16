@@ -29,7 +29,7 @@ class StudentPolicy
      */
     public function create(CollegeAdmin $collegeAdmin): bool
     {
-        return false;
+        return true; // Allow college admins to create students
     }
 
     /**
@@ -37,7 +37,7 @@ class StudentPolicy
      */
     public function update(CollegeAdmin $collegeAdmin, Student $student): bool
     {
-        return false;
+        return $collegeAdmin->id === $student->college_admin_id; // Only allow if admin owns the student
     }
 
     /**
@@ -45,7 +45,7 @@ class StudentPolicy
      */
     public function delete(CollegeAdmin $collegeAdmin, Student $student): bool
     {
-        return false;
+        return $collegeAdmin->id === $student->college_admin_id; // Only allow if admin owns the student
     }
 
     /**

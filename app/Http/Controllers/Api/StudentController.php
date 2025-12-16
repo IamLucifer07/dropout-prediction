@@ -121,11 +121,52 @@ class StudentController extends Controller
 
         $student->update($validated);
 
-        // Make new prediction if significant data changed
-        if ($this->shouldMakeNewPrediction($request->all())) {
-            $this->processPrediction($student);
+        // Always make a new prediction after update, using the same process as new student
+        // Use the model from the latest prediction if available, otherwise use default
+        $student->load('latestPrediction');
+        $latestPrediction = $student->latestPrediction;
+        $modelToUse = 'random_forest.joblib'; // Default model
+
+        // Valid model names that exist in the models directory
+        $validModels = ['random_forest.joblib', 'decision_tree.joblib'];
+
+        if ($latestPrediction) {
+            // Try to get the model from metadata
+            if (isset($latestPrediction->model_metadata['attempted_model'])) {
+                $attemptedModel = $latestPrediction->model_metadata['attempted_model'];
+                $modelWithExtension = substr($attemptedModel, -7) === '.joblib'
+                    ? $attemptedModel
+                    : $attemptedModel . '.joblib';
+
+                // Only use if it's a valid model
+                if (in_array($modelWithExtension, $validModels)) {
+                    $modelToUse = $modelWithExtension;
+                }
+            } elseif ($latestPrediction->model_version) {
+                // Extract model name from model_version (remove "(fallback)" if present)
+                $modelVersion = str_replace(' (fallback)', '', $latestPrediction->model_version);
+
+                // Skip invalid model versions (seeded data, fallback, unknown, etc.)
+                $invalidVersions = ['fallback', 'unknown', 'seeded_data_v1.0', 'seeded_data'];
+
+                if (!in_array($modelVersion, $invalidVersions) && strpos($modelVersion, 'seeded') === false) {
+                    $modelWithExtension = substr($modelVersion, -7) === '.joblib'
+                        ? $modelVersion
+                        : $modelVersion . '.joblib';
+
+                    // Only use if it's a valid model
+                    if (in_array($modelWithExtension, $validModels)) {
+                        $modelToUse = $modelWithExtension;
+                    }
+                }
+            }
         }
 
+        // Make prediction with the determined model (same process as new student)
+        $this->processPrediction($student, $modelToUse);
+
+        // Reload student with latest prediction
+        $student->refresh();
         return response()->json($student->load('latestPrediction'));
     }
 
@@ -191,23 +232,41 @@ class StudentController extends Controller
 
     private function processPrediction(Student $student, ?string $model = null)
     {
+        $modelName = $model ?? 'random_forest.joblib';
+        $cleanModelName = str_replace('.joblib', '', $modelName);
+
         try {
             $inputData = $this->featureTransformer->transform($student);
-            $response = Http::timeout(30)->post(config('services.ml.url'), [
+            $mlUrl = config('services.ml.url');
+
+            Log::info('Making prediction request', [
+                'student_id' => $student->id,
+                'model' => $modelName,
+                'ml_url' => $mlUrl,
+            ]);
+
+            $response = Http::timeout(30)->post($mlUrl, [
                 'data' => $inputData,
-                'model' => $model ?? 'random_forest.joblib',
+                'model' => $modelName,
             ]);
 
             if (! $response->successful()) {
                 Log::warning('Prediction API returned non-success status', [
                     'status' => $response->status(),
                     'body' => $response->body(),
+                    'model' => $modelName,
+                    'ml_url' => $mlUrl,
                 ]);
 
-                return $this->makeFallbackPrediction($student);
+                return $this->makeFallbackPrediction($student, $cleanModelName);
             }
 
             $predictionData = $response->json();
+
+            // Extract model name from metadata or use the provided model parameter
+            $returnedModelName = $predictionData['model_metadata']['model_path'] ?? $modelName ?? 'unknown';
+            // Remove .joblib extension if present for cleaner display
+            $finalModelName = str_replace('.joblib', '', $returnedModelName);
 
             $prediction = Prediction::create([
                 'student_id' => $student->id,
@@ -219,21 +278,32 @@ class StudentController extends Controller
                     $predictionData['model_metadata'] ?? [],
                     ['probabilities' => $predictionData['probabilities'] ?? []]
                 ),
-                'model_version' => $predictionData['model_metadata']['model_path'] ?? $model ?? '1.0',
+                'model_version' => $finalModelName,
                 'input_data' => $inputData,
                 'predicted_at' => now(),
             ]);
 
+            Log::info('Prediction created successfully', [
+                'student_id' => $student->id,
+                'model_version' => $finalModelName,
+                'prediction_result' => $predictionData['prediction'],
+            ]);
+
             return $prediction;
         } catch (\Exception $e) {
-            Log::error('Prediction API error: ' . $e->getMessage());
+            Log::error('Prediction API error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'model' => $modelName,
+                'ml_url' => config('services.ml.url'),
+            ]);
 
-            // Fallback prediction based on simple rules
-            return $this->makeFallbackPrediction($student);
+            // Fallback prediction based on simple rules, but still use the model name
+            return $this->makeFallbackPrediction($student, $cleanModelName);
         }
     }
 
-    private function makeFallbackPrediction(Student $student)
+    private function makeFallbackPrediction(Student $student, ?string $modelName = null)
     {
         $features = $this->featureTransformer->transform($student);
         $riskScore = 0;
@@ -265,14 +335,17 @@ class StudentController extends Controller
         $prediction = $riskScore >= 6 ? 'dropout' : ($riskScore >= 3 ? 'at_risk' : 'safe');
         $confidence = max(0.5, min(0.95, 0.55 + ($riskScore * 0.05)));
 
+        // Use the model name if provided, otherwise mark as fallback
+        $finalModelName = $modelName ? ($modelName . ' (fallback)') : 'fallback';
+
         return Prediction::create([
             'student_id' => $student->id,
             'college_admin_id' => $student->college_admin_id,
             'prediction_result' => $prediction,
             'confidence_score' => $confidence,
             'feature_importance' => null,
-            'model_metadata' => ['fallback' => true],
-            'model_version' => 'fallback',
+            'model_metadata' => ['fallback' => true, 'attempted_model' => $modelName],
+            'model_version' => $finalModelName,
             'input_data' => $features,
             'predicted_at' => now(),
         ]);
@@ -315,6 +388,19 @@ class StudentController extends Controller
         }]);
 
         return Inertia::render('students/StudentDetail', [
+            'student' => $student,
+        ]);
+    }
+
+    public function showStudentEditPage(Request $request, Student $student)
+    {
+        $this->authorize('update', $student);
+
+        $student->load(['predictions' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }]);
+
+        return Inertia::render('students/StudentForm', [
             'student' => $student,
         ]);
     }
