@@ -1,4 +1,6 @@
 <template>
+  <div class="min-h-screen bg-gray-50">
+    <Navbar />
     <div class="p-8 max-w-4xl mx-auto">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ student.full_name }}</h1>
@@ -48,10 +50,12 @@
         </div>
       </div>
     </div>
+    </div>
   </template>
   
   <script setup>
   import { Link } from '@inertiajs/vue3';
+  import Navbar from '@/components/Navbar.vue';
   
   defineProps({
     student: Object,

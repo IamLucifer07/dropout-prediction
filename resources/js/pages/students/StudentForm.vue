@@ -1,5 +1,8 @@
 <template>
-  <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+  <div class="min-h-screen bg-gray-50">
+    <Navbar />
+    <div class="max-w-4xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-lg p-6">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">
       {{ isEditing ? 'Edit Student' : 'Add New Student' }}
     </h2>
@@ -490,19 +493,46 @@
         </button>
       </div>
     </div>
+    </div>
+    </div>
   </div>
 </template>
 
 <script>
 // import axios from 'axios'
 import apiClient from '@/api/index.js'
+import Navbar from '@/components/Navbar.vue'
+import { router } from '@inertiajs/vue3'
 
 // Configure axios to send credentials with requests
 apiClient.defaults.withCredentials = true
 apiClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+import { createToastInterface } from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+
+const toast = createToastInterface({
+    transition: 'Vue-Toastification__bounce',
+    maxToasts: 20,
+    newestOnTop: true,
+    position: 'top-right',
+    timeout: 5000, // All toasts display for 5 seconds
+    closeOnClick: false,
+    closeButton: true,
+    pauseOnFocusLoss: true,
+    pauseOnHover: true,
+    draggable: true,
+    draggablePercent: 0.6,
+    showCloseButtonOnHover: false,
+    hideProgressBar: false,
+    icon: true,
+    rtl: false
+})
 
 export default {
   name: 'StudentForm',
+  components: {
+    Navbar
+  },
   props: {
     student: {
       type: Object,
@@ -559,8 +589,13 @@ export default {
             grades: newStudent.grades || [],
             additional_factors: newStudent.additional_factors || []
           }
+          // When editing, also set savedStudent so prediction section is available
+          // This allows making predictions on existing students without resaving first
+          this.savedStudent = newStudent
         } else {
           this.resetForm()
+          this.savedStudent = null
+          this.predictionResult = null
         }
       },
       immediate: true
@@ -624,13 +659,13 @@ export default {
         // Emit event to refresh dashboard
         this.$emit('prediction-made', response.data)
         
-        // Show success message
+        // Show success message via toast
         const riskLevel = this.formatRiskLevel(response.data.prediction_result)
         const confidence = Math.round(response.data.confidence_score * 100)
-        alert(`Prediction completed!\nRisk Level: ${riskLevel}\nConfidence: ${confidence}%`)
+        toast.success(`Prediction completed! Risk: ${riskLevel}, Confidence: ${confidence}%`)
       } catch (error) {
         console.error('Error making prediction:', error)
-        alert('Failed to make prediction. Please try again.')
+        toast.error('Failed to make prediction. Please try again.')
       } finally {
         this.predictionLoading = false
       }
@@ -720,8 +755,14 @@ export default {
         
         this.$emit('student-saved', response.data)
         
-        // Show success message
-        alert('Student created successfully!')
+        // Show success message via toast
+        if (this.isEditing) {
+          toast.success('Student updated successfully!')
+          // Redirect to student detail page after edit
+          router.visit(`/students/${this.savedStudent.id}`)
+        } else {
+          toast.success('Student created successfully!')
+        }
         
         // Don't reset form immediately - allow user to make prediction
         // this.resetForm()
@@ -729,14 +770,14 @@ export default {
         console.error('Error saving student:', error)
         if (error.response?.status === 422) {
           this.errors = error.response.data.errors || {}
-          // Show validation errors
+          // Show validation errors via toast
           const errorMessages = Object.values(this.errors).flat().join('\n')
-          alert('Validation errors:\n' + errorMessages)
+          toast.error('Validation errors:\n' + errorMessages)
         } else if (error.response?.status === 401) {
-          alert('Authentication failed. Please login again.')
+          toast.error('Authentication failed. Please login again.')
         } else {
           const errorMessage = error.response?.data?.message || error.message || 'Failed to save student. Please try again.'
-          alert('Error: ' + errorMessage)
+          toast.error(errorMessage)
         }
       } finally {
         this.loading = false

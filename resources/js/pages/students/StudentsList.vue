@@ -1,4 +1,6 @@
 <template>
+  <div class="min-h-screen bg-gray-50">
+    <Navbar />
     <div class="p-8">
       <h1 class="text-2xl font-bold mb-6">All Students</h1>
       
@@ -52,10 +54,12 @@
         </div>
       </div>
     </div>
-  </template>
+  </div>
+</template>
   
   <script setup>
   import { Link } from '@inertiajs/vue3';
+  import Navbar from '@/components/Navbar.vue';
   
   defineProps({
     students: Object,
