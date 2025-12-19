@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
 
 type TrendRecord = Record<string, number>
@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const chartRef = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
+let updateTimeout: ReturnType<typeof setTimeout> | null = null
 
 const riskOrder = ['dropout', 'at_risk', 'safe'] as const
 const colors: Record<(typeof riskOrder)[number], string> = {
@@ -45,7 +46,8 @@ const monthFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric'
 })
 
-const resolveLabels = () => {
+// Memoize labels computation
+const chartLabels = computed(() => {
   if (!props.data) return []
   return Object.keys(props.data)
     .sort()
@@ -54,10 +56,13 @@ const resolveLabels = () => {
       const parsedDate = new Date(Number(year), Number(value) - 1, 1)
       return monthFormatter.format(parsedDate)
     })
-}
+})
 
-const buildDataset = () => {
-  const months = Object.keys(props.data ?? {}).sort()
+// Memoize dataset computation
+const chartDataset = computed(() => {
+  if (!props.data) return { labels: [], datasets: [] }
+  
+  const months = Object.keys(props.data).sort()
 
   const datasets = riskOrder.map((risk) => ({
     label: labels[risk],
@@ -70,12 +75,16 @@ const buildDataset = () => {
   }))
 
   return {
-    labels: resolveLabels(),
+    labels: chartLabels.value,
     datasets
   }
-}
+})
 
 const destroyChart = () => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+    updateTimeout = null
+  }
   if (chartInstance) {
     chartInstance.destroy()
     chartInstance = null
@@ -95,12 +104,24 @@ const renderChart = () => {
     chartInstance.destroy()
   }
 
+  const dataset = chartDataset.value
+
   chartInstance = new Chart(context, {
     type: 'line',
-    data: buildDataset(),
+    data: dataset,
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 0 // Disable animations for faster rendering
+      },
+      transitions: {
+        active: {
+          animation: {
+            duration: 0
+          }
+        }
+      },
       interaction: {
         mode: 'index',
         intersect: false
@@ -134,33 +155,56 @@ const renderChart = () => {
   })
 }
 
+const updateChart = () => {
+  if (!chartRef.value || !hasData.value) {
+    destroyChart()
+    return
+  }
+
+  if (chartInstance) {
+    const dataset = chartDataset.value
+    chartInstance.data.labels = dataset.labels
+    chartInstance.data.datasets = dataset.datasets as any
+    chartInstance.update('none') // Update without animation
+  } else {
+    renderChart()
+  }
+}
+
+// Debounced update function
+const debouncedUpdate = () => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+  }
+  updateTimeout = setTimeout(() => {
+    nextTick(() => {
+      updateChart()
+    })
+  }, 100) // 100ms debounce
+}
+
 onMounted(() => {
-  renderChart()
+  nextTick(() => {
+    renderChart()
+  })
 })
 
+// Use shallow watch instead of deep watch for better performance
 watch(
   () => props.data,
   () => {
-    if (!hasData.value) {
-      destroyChart()
-      return
-    }
-
-    if (chartInstance) {
-      const dataset = buildDataset()
-      chartInstance.data.labels = dataset.labels
-      chartInstance.data.datasets = dataset.datasets as any
-      chartInstance.update()
-    } else {
-      renderChart()
-    }
+    debouncedUpdate()
   },
-  { deep: true }
+  { immediate: false }
 )
 
 watch(hasData, (value) => {
   if (!value) {
     destroyChart()
+  } else if (!chartInstance) {
+    nextTick(() => {
+      renderChart()
+    })
   }
 })
 

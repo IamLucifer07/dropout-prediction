@@ -25,11 +25,11 @@
                 <span v-if="student.latest_prediction"
                       :class="getRiskBadgeColor(student.latest_prediction.prediction_result)"
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-                  {{ student.latest_prediction.prediction_result.replace('_', ' ').toUpperCase() }}
+                  {{ formatRiskLevel(student.latest_prediction.prediction_result) }}
                 </span>
                 <span v-else class="text-gray-400">No Prediction</span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(student.created_at) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(student.updated_at) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <Link :href="`/students/${student.id}`" class="text-indigo-600 hover:text-indigo-900">View/Edit</Link>
               </td>
@@ -80,5 +80,12 @@
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const formatRiskLevel = (risk) => {
+    if (risk === 'dropout') return 'High Risk'
+    if (risk === 'at_risk') return 'At Risk'
+    if (risk === 'safe') return 'Safe'
+    return risk.replace('_', ' ').toUpperCase()
   };
   </script>

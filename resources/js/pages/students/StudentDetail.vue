@@ -38,7 +38,7 @@
               <div class="text-right">
                 <span :class="getRiskBadgeColor(prediction.prediction_result)"
                       class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium">
-                  {{ prediction.prediction_result.replace('_', ' ').toUpperCase() }}
+                  {{ formatRiskLevel(prediction.prediction_result) }}
                 </span>
                 <p class="text-sm text-gray-500 mt-1">{{ Math.round(prediction.confidence_score * 100) }}% Confidence</p>
               </div>
@@ -79,5 +79,12 @@
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatRiskLevel = (risk) => {
+    if (risk === 'dropout') return 'High Risk'
+    if (risk === 'at_risk') return 'At Risk'
+    if (risk === 'safe') return 'Safe'
+    return risk.replace('_', ' ').toUpperCase()
   };
   </script>

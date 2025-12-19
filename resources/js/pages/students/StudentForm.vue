@@ -690,7 +690,10 @@ export default {
     },
 
     formatRiskLevel(riskLevel) {
-      return riskLevel.replace('_', ' ').toUpperCase().replace('AT RISK', 'AT RISK')
+      if (riskLevel === 'dropout') return 'High Risk'
+      if (riskLevel === 'at_risk') return 'At Risk'
+      if (riskLevel === 'safe') return 'Safe'
+      return riskLevel.replace('_', ' ').toUpperCase()
     },
 
     resetFormAndClearPrediction() {
