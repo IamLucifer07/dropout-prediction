@@ -1,6 +1,7 @@
 # Dropout Prediction System - Project Structure
 
 ## Project Overview
+
 A Laravel-based web application with Python analytics for predicting student dropout rates.
 
 ```
@@ -286,3 +287,276 @@ Based on migration files:
 ```
 
 This structure shows you have a well-organized full-stack application with clear separation of concerns between the Laravel backend, Vue.js frontend, and Python analytics components.
+
+├── DEMO_SETUP.md
+├── PROJECT_STRUCTURE.md
+├── app
+│   ├── Http
+│   │   ├── Controllers
+│   │   │   ├── Api
+│   │   │   │   ├── CollegeAdminController.php
+│   │   │   │   └── StudentController.php
+│   │   │   ├── Auth
+│   │   │   │   ├── AuthenticatedSessionController.php
+│   │   │   │   ├── ConfirmablePasswordController.php
+│   │   │   │   ├── EmailVerificationNotificationController.php
+│   │   │   │   ├── EmailVerificationPromptController.php
+│   │   │   │   ├── NewPasswordController.php
+│   │   │   │   ├── PasswordResetLinkController.php
+│   │   │   │   └── VerifyEmailController.php
+│   │   │   ├── Settings
+│   │   │   │   ├── PasswordController.php
+│   │   │   │   └── ProfileController.php
+│   │   │   ├── AuthController.php
+│   │   │   ├── Controller.php
+│   │   │   ├── DashboardController.php
+│   │   │   └── ExternalDataController.php
+│   │   ├── Middleware
+│   │   │   ├── HandleAppearance.php
+│   │   │   └── HandleInertiaRequests.php
+│   │   └── Requests
+│   │   ├── Auth
+│   │   │   └── LoginRequest.php
+│   │   └── Settings
+│   │   └── ProfileUpdateRequest.php
+│   ├── Models
+│   │   ├── CollegeAdmin.php
+│   │   ├── ExternalDataset.php
+│   │   ├── Prediction.php
+│   │   ├── Student.php
+│   │   └── User.php
+│   ├── Providers
+│   │   └── AppServiceProvider.php
+│   └── Services
+│   └── StudentFeatureTransformer.php
+├── artisan
+├── bootstrap
+│   ├── app.php
+│   ├── cache
+│   │   ├── packages.php
+│   │   └── services.php
+│   └── providers.php
+├── composer.json
+├── composer.lock
+├── components.json
+├── config
+│   ├── app.php
+│   ├── auth.php
+│   ├── cache.php
+│   ├── database.php
+│   ├── filesystems.php
+│   ├── inertia.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── queue.php
+│   ├── services.php
+│   └── session.php
+├── database
+│   ├── database.sqlite
+│   ├── factories
+│   │   └── UserFactory.php
+│   ├── migrations
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2025_07_09_082113_create_college_admins_table.php
+│   │   ├── 2025_07_09_082131_create_students_table.php
+│   │   ├── 2025_07_09_082152_create_predictions_table.php
+│   │   └── 2025_07_09_082209_create_external_datasets_table.php
+│   └── seeders
+│   └── DatabaseSeeder.php
+├── eslint.config.js
+├── package-lock.json
+├── package.json
+├── phpunit.xml
+├── python_scripts
+│   └── ml_model
+│   ├── **init**.py
+│   ├── features.py
+│   ├── models
+│   │   ├── dropout_predictor_model.joblib
+│   │   └── label_encoders.joblib
+│   ├── predict.py
+│   ├── preprocess.py
+│   ├── schema
+│   │   ├── input_schema.json
+│   │   └── output_schema.json
+│   ├── service.py
+│   └── train_model.py
+├── resources
+│   ├── css
+│   │   └── app.css
+│   ├── js
+│   │   ├── api
+│   │   │   ├── apiClient.ts
+│   │   │   ├── collegeAdmins.ts
+│   │   │   ├── index.ts
+│   │   │   ├── predictions.ts
+│   │   │   └── students.ts
+│   │   ├── app.ts
+│   │   ├── bootstrap.ts
+│   │   ├── components
+│   │   │   ├── AppLogo.vue
+│   │   │   ├── ApplicationLogo.vue
+│   │   │   ├── Checkbox.vue
+│   │   │   ├── DataTable.vue
+│   │   │   ├── DataTableColumnHeader.vue
+│   │   │   ├── DataTableViewOptions.vue
+│   │   │   ├── DropdownLink.vue
+│   │   │   ├── FileUpload.vue
+│   │   │   ├── InputError.vue
+│   │   │   ├── InputLabel.vue
+│   │   │   ├── NavLink.vue
+│   │   │   ├── Pagination.vue
+│   │   │   ├── PrimaryButton.vue
+│   │   │   ├── ResponsiveNavLink.vue
+│   │   │   ├── SecondaryButton.vue
+│   │   │   ├── TextInput.vue
+│   │   │   ├── Toaster.vue
+│   │   │   ├── ui
+│   │   │   │   ├── alert
+│   │   │   │   │   ├── Alert.vue
+│   │   │   │   │   ├── AlertDescription.vue
+│   │   │   │   │   ├── AlertTitle.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── button
+│   │   │   │   │   ├── Button.vue
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   └── utils.ts
+│   │   │   │   ├── card
+│   │   │   │   │   ├── Card.vue
+│   │   │   │   │   ├── CardContent.vue
+│   │   │   │   │   ├── CardDescription.vue
+│   │   │   │   │   ├── CardFooter.vue
+│   │   │   │   │   ├── CardHeader.vue
+│   │   │   │   │   ├── CardTitle.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── checkbox
+│   │   │   │   │   ├── Checkbox.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── dropdown-menu
+│   │   │   │   │   ├── DropdownMenu.vue
+│   │   │   │   │   ├── DropdownMenuCheckboxItem.vue
+│   │   │   │   │   ├── DropdownMenuContent.vue
+│   │   │   │   │   ├── DropdownMenuGroup.vue
+│   │   │   │   │   ├── DropdownMenuItem.vue
+│   │   │   │   │   ├── DropdownMenuLabel.vue
+│   │   │   │   │   ├── DropdownMenuPortal.vue
+│   │   │   │   │   ├── DropdownMenuRadioGroup.vue
+│   │   │   │   │   ├── DropdownMenuRadioItem.vue
+│   │   │   │   │   ├── DropdownMenuSeparator.vue
+│   │   │   │   │   ├── DropdownMenuShortcut.vue
+│   │   │   │   │   ├── DropdownMenuSub.vue
+│   │   │   │   │   ├── DropdownMenuSubContent.vue
+│   │   │   │   │   ├── DropdownMenuSubTrigger.vue
+│   │   │   │   │   ├── DropdownMenuTrigger.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── input
+│   │   │   │   │   ├── Input.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── label
+│   │   │   │   │   ├── Label.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── select
+│   │   │   │   │   ├── Select.vue
+│   │   │   │   │   ├── SelectContent.vue
+│   │   │   │   │   ├── SelectGroup.vue
+│   │   │   │   │   ├── SelectItem.vue
+│   │   │   │   │   ├── SelectItemText.vue
+│   │   │   │   │   ├── SelectLabel.vue
+│   │   │   │   │   ├── SelectScrollDownButton.vue
+│   │   │   │   │   ├── SelectScrollUpButton.vue
+│   │   │   │   │   ├── SelectSeparator.vue
+│   │   │   │   │   ├── SelectTrigger.vue
+│   │   │   │   │   ├── SelectValue.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── table
+│   │   │   │   │   ├── Table.vue
+│   │   │   │   │   ├── TableBody.vue
+│   │   │   │   │   ├── TableCaption.vue
+│   │   │   │   │   ├── TableCell.vue
+│   │   │   │   │   ├── TableEmpty.vue
+│   │   │   │   │   ├── TableFooter.vue
+│   │   │   │   │   ├── TableHead.vue
+│   │   │   │   │   ├── TableHeader.vue
+│   │   │   │   │   ├── TableRow.vue
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── toast
+│   │   │   │   │   ├── Toast.vue
+│   │   │   │   │   ├── ToastAction.vue
+│   │   │   │   │   ├── ToastClose.vue
+│   │   │   │   │   ├── ToastDescription.vue
+│   │   │   │   │   ├── ToastProvider.vue
+│   │   │   │   │   ├── ToastTitle.vue
+│   │   │   │   │   ├── ToastViewport.vue
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   └── use-toast.ts
+│   │   │   │   └── utils.ts
+│   │   ├── lib
+│   │   │   ├── columns.ts
+│   │   │   └── utils.ts
+│   │   ├── layouts
+│   │   │   ├── AuthenticatedLayout.vue
+│   │   │   └── GuestLayout.vue
+│   │   ├── pages
+│   │   │   ├── Auth
+│   │   │   │   ├── ConfirmPassword.vue
+│   │   │   │   ├── ForgotPassword.vue
+│   │   │   │   ├── Login.vue
+│   │   │   │   ├── Register.vue
+│   │   │   │   ├── ResetPassword.vue
+│   │   │   │   └── VerifyEmail.vue
+│   │   │   ├── Dashboard.vue
+│   │   │   ├── ExternalData
+│   │   │   │   └── Upload.vue
+│   │   │   ├── Predictions
+│   │   │   │   └── Index.vue
+│   │   │   ├── Profile
+│   │   │   │   ├── Edit.vue
+│   │   │   │   └── Partials
+│   │   │   │   ├── DeleteUserForm.vue
+│   │   │   │   └── UpdatePasswordForm.vue
+│   │   │   ├── Settings
+│   │   │   │   ├── CollegeAdmins
+│   │   │   │   │   ├── columns.ts
+│   │   │   │   │   └── Index.vue
+│   │   │   │   ├── data.ts
+│   │   │   │   └── schema.ts
+│   │   │   ├── Students
+│   │   │   │   ├── columns.ts
+│   │   │   │   ├── data-table.ts
+│   │   │   │   ├── Index.vue
+│   │   │   │   ├── schema.ts
+│   │   │   │   └── useStudents.ts
+│   │   │   └── Welcome.vue
+│   │   ├── router
+│   │   │   └── index.ts
+│   │   └── types
+│   │   ├── index.d.ts
+│   │   └── ziggy.d.ts
+│   └── views
+│   ├── app.blade.php
+│   └── welcome.blade.php
+├── routes
+│   ├── api.php
+│   ├── auth.php
+│   ├── channels.php
+│   └── web.php
+├── start-demo.sh
+├── tests
+│   ├── CreatesApplication.php
+│   ├── Feature
+│   │   ├── Auth
+│   │   │   ├── AuthenticationTest.php
+│   │   │   ├── EmailVerificationTest.php
+│   │   │   ├── PasswordConfirmationTest.php
+│   │   │   ├── PasswordResetTest.php
+│   │   │   ├── PasswordUpdateTest.php
+│   │   │   └── RegistrationTest.php
+│   │   ├── ExampleTest.php
+│   │   └── ProfileTest.php
+│   ├── Pest.php
+│   └── Unit
+│   └── ExampleTest.php
+├── tsconfig.json
+└── vite.config.ts
