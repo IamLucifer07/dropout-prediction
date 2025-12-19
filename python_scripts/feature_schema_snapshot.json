@@ -1,0 +1,183 @@
+{
+  "features": [
+    {
+      "name": "age",
+      "type": "numeric",
+      "description": "Student age in years at the time of prediction",
+      "default": 20,
+      "min": 16,
+      "max": 65
+    },
+    {
+      "name": "gender",
+      "type": "categorical",
+      "description": "Self-identified gender",
+      "categories": [
+        "male",
+        "female",
+        "other"
+      ],
+      "default": "other"
+    },
+    {
+      "name": "gpa",
+      "type": "numeric",
+      "description": "Grade point average on 0-4 scale",
+      "default": 2.5,
+      "min": 0,
+      "max": 4
+    },
+    {
+      "name": "attendance_rate",
+      "type": "numeric",
+      "description": "Class attendance percentage (0-100)",
+      "default": 80,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "name": "previous_failures",
+      "type": "numeric",
+      "description": "Total number of previously failed courses",
+      "default": 0,
+      "min": 0,
+      "max": 30
+    },
+    {
+      "name": "study_hours_per_week",
+      "type": "numeric",
+      "description": "Average study hours per week",
+      "default": 10,
+      "min": 0,
+      "max": 80
+    },
+    {
+      "name": "internet_access",
+      "type": "binary",
+      "description": "Whether the student has reliable internet access",
+      "default": true
+    },
+    {
+      "name": "extracurricular_involvement",
+      "type": "binary",
+      "description": "Whether the student participates in extracurricular activities",
+      "default": false
+    },
+    {
+      "name": "part_time_job",
+      "type": "binary",
+      "description": "Whether the student has a part-time job",
+      "default": false
+    },
+    {
+      "name": "financial_aid",
+      "type": "binary",
+      "description": "Whether the student receives financial aid or scholarship",
+      "default": false
+    },
+    {
+      "name": "family_income",
+      "type": "numeric",
+      "description": "Annual family income in local currency",
+      "default": 25000,
+      "min": 0
+    },
+    {
+      "name": "parental_education_level",
+      "type": "categorical",
+      "description": "Highest education level attained by parent/guardian",
+      "categories": [
+        "no_education",
+        "primary",
+        "secondary",
+        "bachelors",
+        "masters",
+        "phd",
+        "other"
+      ],
+      "default": "other"
+    },
+    {
+      "name": "course_of_study",
+      "type": "categorical",
+      "description": "Course or program identifier",
+      "categories": [],
+      "default": "course_unknown"
+    },
+    {
+      "name": "semester",
+      "type": "numeric",
+      "description": "Current semester number",
+      "default": 1,
+      "min": 1,
+      "max": 12
+    },
+    {
+      "name": "living_situation",
+      "type": "categorical",
+      "description": "Primary living arrangement while studying",
+      "categories": [
+        "with_family",
+        "hostel",
+        "rented_accommodation",
+        "own_accommodation",
+        "other"
+      ],
+      "default": "with_family"
+    },
+    {
+      "name": "distance_from_home",
+      "type": "numeric",
+      "description": "Approximate distance from home to campus (km)",
+      "default": 10,
+      "min": 0,
+      "max": 2000
+    },
+    {
+      "name": "mental_health_score",
+      "type": "numeric",
+      "description": "Self-reported mental wellness score (0-10)",
+      "default": 5,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "mode_of_transport",
+      "type": "categorical",
+      "description": "Usual mode of transport to campus",
+      "categories": [
+        "walking",
+        "bicycle",
+        "bus",
+        "car",
+        "motorcycle",
+        "other"
+      ],
+      "default": "other"
+    },
+    {
+      "name": "grades_average",
+      "type": "numeric",
+      "description": "Average numeric grade across subjects (0-100)",
+      "default": 75,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "name": "grades_count",
+      "type": "numeric",
+      "description": "Number of recent graded subjects",
+      "default": 6,
+      "min": 0,
+      "max": 40
+    }
+  ],
+  "target": {
+    "name": "target",
+    "categories": [
+      "dropout",
+      "at_risk",
+      "safe"
+    ]
+  }
+}

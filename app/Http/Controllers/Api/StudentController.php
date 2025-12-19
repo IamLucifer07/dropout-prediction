@@ -371,7 +371,7 @@ class StudentController extends Controller
         $students = Student::query()
             ->where('college_admin_id', $request->user()->id)
             ->with('latestPrediction')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('updated_at', 'desc')
             ->paginate(15);
 
         return Inertia::render('students/StudentsList', [
