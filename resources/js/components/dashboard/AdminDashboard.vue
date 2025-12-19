@@ -134,7 +134,7 @@
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                         getRiskBadgeColor(prediction.prediction_result)
                       ]">
-                        {{ prediction.prediction_result.replace('_', ' ').toUpperCase() }}
+                        {{ formatRiskLevel(prediction.prediction_result) }}
                       </span>
                     </div>
                     <div class="flex-shrink-0">
@@ -218,7 +218,7 @@ onMounted(async () => {
   await loadDashboardData()
   
   // Refresh dashboard every 30 seconds to show updated data
-  setInterval(loadDashboardData, 30000)
+  setInterval(loadDashboardData, 100000)
 })
 
 // Expose refresh method for external calls
@@ -251,5 +251,12 @@ const formatDate = (dateString) => {
     month: 'short',
     day: 'numeric'
   })
+}
+
+const formatRiskLevel = (risk) => {
+  if (risk === 'dropout') return 'High Risk'
+  if (risk === 'at_risk') return 'At Risk'
+  if (risk === 'safe') return 'Safe'
+  return risk.replace('_', ' ').toUpperCase()
 }
 </script>
